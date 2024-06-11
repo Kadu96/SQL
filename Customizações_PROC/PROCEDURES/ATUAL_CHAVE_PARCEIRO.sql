@@ -1,0 +1,41 @@
+CREATE OR REPLACE PROCEDURE SANKHYA."ATUAL_CHAVE_PARCEIRO" (
+       P_CODUSU NUMBER,        -- Código do usuário logado
+       P_IDSESSAO VARCHAR2,    -- Identificador da execução. Serve para buscar informações dos parâmetros/campos da execução.
+       P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
+       P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
+) AS
+
+	FIELD_CODPARC NUMBER;
+	V_PARCEIRO VARCHAR2(100);
+	V_CHAVES VARCHAR2(100);
+	V_PARTICAO VARCHAR2(100);
+	C_PARTICAO INTEGER;
+
+BEGIN
+
+	FOR I IN 1..P_QTDLINHAS -- Este loop permite obter o valor de campos dos registros envolvidos na execução.
+	LOOP                    -- A variável "I" representa o registro corrente.
+
+			FIELD_CODPARC := ACT_INT_FIELD(P_IDSESSAO, I, 'CODPARC');
+			SELECT AD_CODLEGADO INTO V_PARCEIRO FROM TGFPAR WHERE CODPARC = FIELD_CODPARC;
+	
+			INSERT INTO AD_EQUIPMON (CODPARC,IDSANKHYA,CHAVE,PARTICAO)
+			SELECT 
+				FIELD_CODPARC, 
+				ROWNUM, 
+				CHAVE, 
+				PARTICAO
+			FROM AD_CHAVES WHERE CODPARC = V_PARCEIRO;
+		
+			SELECT LISTAGG(DISTINCT CHAVE, ',') WITHIN GROUP (ORDER BY CHAVE) INTO V_CHAVES FROM AD_CHAVES WHERE CODPARC = V_PARCEIRO;
+			SELECT LISTAGG(DISTINCT PARTICAO, ',') WITHIN GROUP (ORDER BY PARTICAO) INTO V_PARTICAO FROM AD_CHAVES WHERE CODPARC = V_PARCEIRO;
+		
+			UPDATE TGFPAR SET AD_PARTICOESS = V_CHAVES || ' ==> ' || V_PARTICAO WHERE CODPARC = FIELD_CODPARC;
+
+			/*INSERT INTO AD_PARTICOES (CODPARC,CD_PARTICAO,CD_CHAVE)
+			SELECT FIELD_CODPARC,CHAVE,PARTICAO
+			FROM AD_CHAVES WHERE CODPARC = V_PARCEIRO;*/
+	
+	END LOOP;
+
+END;

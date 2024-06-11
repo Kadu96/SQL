@@ -1,0 +1,76 @@
+create or replace PROCEDURE "AD_ATUALIZA_STATUS_PROD" (
+       P_TIPOEVENTO INT,    -- Identifica o tipo de evento
+       P_IDSESSAO VARCHAR2, -- Identificador da execução. Serve para buscar informações dos campos da execução.
+       P_CODUSU INT         -- Código do usuário logado
+) AS
+       BEFORE_INSERT INT;
+       AFTER_INSERT  INT;
+       BEFORE_DELETE INT;
+       AFTER_DELETE  INT;
+       BEFORE_UPDATE INT;
+       AFTER_UPDATE  INT;
+       BEFORE_COMMIT INT;
+       V_COTACAO NUMBER;
+       V_PRODUTO NUMBER;
+       V_LOCAL NUMBER;
+       V_NUNOTA NUMBER;
+       V_STATUS VARCHAR2(30);
+       
+BEGIN
+       BEFORE_INSERT := 0;
+       AFTER_INSERT  := 1;
+       BEFORE_DELETE := 2;
+       AFTER_DELETE  := 3;
+       BEFORE_UPDATE := 4;
+       AFTER_UPDATE  := 5;
+       BEFORE_COMMIT := 10;
+       
+/*******************************************************************************
+   É possível obter o valor dos campos através das Functions:
+   
+  EVP_GET_CAMPO_DTA(P_IDSESSAO, 'NOMECAMPO') -- PARA CAMPOS DE DATA
+  EVP_GET_CAMPO_INT(P_IDSESSAO, 'NOMECAMPO') -- PARA CAMPOS NUMÉRICOS INTEIROS
+  EVP_GET_CAMPO_DEC(P_IDSESSAO, 'NOMECAMPO') -- PARA CAMPOS NUMÉRICOS DECIMAIS
+  EVP_GET_CAMPO_TEXTO(P_IDSESSAO, 'NOMECAMPO')   -- PARA CAMPOS TEXTO
+********************************************************************************/
+
+    IF P_TIPOEVENTO = AFTER_INSERT THEN
+        V_COTACAO := EVP_GET_CAMPO_INT(P_IDSESSAO, 'NUMCOTACAO');
+        V_PRODUTO := EVP_GET_CAMPO_INT(P_IDSESSAO, 'CODPROD');
+        V_LOCAL := EVP_GET_CAMPO_INT(P_IDSESSAO, 'CODLOCAL');
+        SELECT NUNOTAORIG INTO V_NUNOTA FROM TGFCOT WHERE NUMCOTACAO = V_COTACAO;
+        SELECT (CASE WHEN STATUSPRODCOT = 'A' THEN 'Aprovada'
+                    WHEN STATUSPRODCOT = 'C' THEN 'Cancelada'
+                    WHEN STATUSPRODCOT = 'E' THEN 'Enviada'
+                    WHEN STATUSPRODCOT = 'F' THEN 'Fechada'
+                    WHEN STATUSPRODCOT = 'O' THEN 'Aberta'
+                    WHEN STATUSPRODCOT = 'P' THEN 'Precificada'
+                    ELSE '' END) INTO V_STATUS 
+        FROM TGFITC ITC, TGFCOT COT, TGFITE ITE 
+        WHERE ITC.NUMCOTACAO = COT.NUMCOTACAO AND COT.NUNOTAORIG = ITE.NUNOTA AND ITC.CODPROD = ITE.CODPROD
+            AND ITE.NUNOTA = V_NUNOTA AND (ITC.CABECALHO='S' OR (ITC.CABECALHO='N' AND ITC.CODPARC=0));
+
+        UPDATE TGFITE SET AD_STATUSPRODCOT = V_STATUS WHERE NUNOTA = V_NUNOTA AND CODPROD = V_PRODUTO AND CODLOCALORIG = V_LOCAL;
+
+    END IF;
+
+    IF P_TIPOEVENTO = AFTER_UPDATE THEN
+        V_COTACAO := EVP_GET_CAMPO_INT(P_IDSESSAO, 'NUMCOTACAO');
+        V_PRODUTO := EVP_GET_CAMPO_INT(P_IDSESSAO, 'CODPROD');
+        V_LOCAL := EVP_GET_CAMPO_INT(P_IDSESSAO, 'CODLOCAL');
+        SELECT NUNOTAORIG INTO V_NUNOTA FROM TGFCOT WHERE NUMCOTACAO = V_COTACAO;
+        SELECT (CASE WHEN STATUSPRODCOT = 'A' THEN 'Aprovada'
+                    WHEN STATUSPRODCOT = 'C' THEN 'Cancelada'
+                    WHEN STATUSPRODCOT = 'E' THEN 'Enviada'
+                    WHEN STATUSPRODCOT = 'F' THEN 'Fechada'
+                    WHEN STATUSPRODCOT = 'O' THEN 'Aberta'
+                    WHEN STATUSPRODCOT = 'P' THEN 'Precificada'
+                    ELSE '' END) INTO V_STATUS 
+        FROM TGFITC ITC, TGFCOT COT, TGFITE ITE 
+        WHERE ITC.NUMCOTACAO = COT.NUMCOTACAO AND COT.NUNOTAORIG = ITE.NUNOTA AND ITC.CODPROD = ITE.CODPROD
+            AND ITE.NUNOTA = V_NUNOTA AND (ITC.CABECALHO='S' OR (ITC.CABECALHO='N' AND ITC.CODPARC=0));
+
+        UPDATE TGFITE SET AD_STATUSPRODCOT = V_STATUS WHERE NUNOTA = V_NUNOTA AND CODPROD = V_PRODUTO AND CODLOCALORIG = V_LOCAL;
+    END IF;
+
+END;
