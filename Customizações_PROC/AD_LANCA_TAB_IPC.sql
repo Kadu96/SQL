@@ -1,0 +1,148 @@
+CREATE OR REPLACE PROCEDURE "AD_LANCA_TAB_IPC" (
+    P_TIPOEVENTO INT,    -- Identifica o tipo de evento
+    P_IDSESSAO VARCHAR2, -- Identificador da execuc?o. Serve para buscar informac?es dos campos da execuc?o.
+    P_CODUSU INT -- Codigo do usuario logado
+) AS
+    BEFORE_INSERT INT;
+    AFTER_INSERT  INT;
+    BEFORE_DELETE INT;
+    AFTER_DELETE  INT;
+    BEFORE_UPDATE INT;
+    AFTER_UPDATE  INT;
+    BEFORE_COMMIT INT;
+
+    P_CODPROD INT;
+    P_VDAIPI VARCHAR2(5);
+    P_CODIPI INT;
+    P_ALIQIPI FLOAT;
+    V_ALIQIPI FLOAT;
+    P_EXNATAB VARCHAR2(5);
+    P_EXNATAB2 VARCHAR2(5);
+
+BEGIN
+    BEFORE_INSERT := 0;
+    AFTER_INSERT  := 1;
+    BEFORE_DELETE := 2;
+    AFTER_DELETE  := 3;
+    BEFORE_UPDATE := 4;
+    AFTER_UPDATE  := 5;
+    BEFORE_COMMIT := 10;
+
+/*******************************************************************************
+E possivel obter o valor dos campos atraves das Functions:
+
+EVP_GET_CAMPO_DTA(P_IDSESSAO, 'NOMECAMPO') -- PARA CAMPOS DE DATA
+EVP_GET_CAMPO_INT(P_IDSESSAO, 'NOMECAMPO') -- PARA CAMPOS NUMERICOS INTEIROS
+EVP_GET_CAMPO_DEC(P_IDSESSAO, 'NOMECAMPO') -- PARA CAMPOS NUMERICOS DECIMAIS
+EVP_GET_CAMPO_TEXTO(P_IDSESSAO, 'NOMECAMPO')   -- PARA CAMPOS TEXTO
+
+O primeiro argumento e uma chave para esta execuc?o. O segundo e o nome do campo.
+
+Para os eventos BEFORE UPDATE, BEFORE INSERT e AFTER DELETE todos os campos estar?o disponiveis.
+Para os demais, somente os campos que pertencem a PK
+
+* Os campos CLOB/TEXT ser?o enviados convertidos para VARCHAR(4000)
+
+Tambem e possivel alterar o valor de um campo atraves das Stored procedures:
+
+EVP_SET_CAMPO_DTA(P_IDSESSAO,  'NOMECAMPO', VALOR) -- VALOR DEVE SER UMA DATA
+EVP_SET_CAMPO_INT(P_IDSESSAO,  'NOMECAMPO', VALOR) -- VALOR DEVE SER UM NUMERO INTEIRO
+EVP_SET_CAMPO_DEC(P_IDSESSAO,  'NOMECAMPO', VALOR) -- VALOR DEVE SER UM NUMERO DECIMAL
+EVP_SET_CAMPO_TEXTO(P_IDSESSAO,  'NOMECAMPO', VALOR) -- VALOR DEVE SER UM TEXTO
+********************************************************************************/
+
+/*     IF P_TIPOEVENTO = BEFORE_INSERT THEN
+--DESCOMENTE ESTE BLOCO PARA PROGRAMAR O "BEFORE INSERT"
+END IF;*/
+    IF P_TIPOEVENTO = AFTER_INSERT THEN
+        --DESCOMENTE ESTE BLOCO PARA PROGRAMAR O "AFTER INSERT"
+        P_CODPROD := EVP_GET_CAMPO_INT(P_IDSESSAO, 'CODPROD');
+        SELECT TEMIPIVENDA INTO P_VDAIPI FROM TGFPRO WHERE CODPROD = P_CODPROD;
+        SELECT MARCA INTO V_MARCA FROM TGFPRO WHERE CODPROD = P_CODPROD;
+
+        IF (V_MARCA = 'IPC') OR (V_MARCA = 'EJC') THEN        
+            SELECT CASE 
+                WHEN CODPROD IN (
+                    SELECT CODPROD FROM TGFEXC WHERE NUTAB IN (
+                        SELECT NUTAB FROM TGFTAB WHERE CODTAB = 2)) THEN 'S' 
+                ELSE 'N' END INTO P_EXNATAB2 
+            FROM TGFPRO WHERE ATIVO = 'S' AND CODPROD = P_CODPROD;
+        
+            IF P_EXNATAB2 = 'N' THEN
+                INSERT INTO TGFEXC (NUTAB, CODPROD, VLRVENDA, TIPO, MODBASEICMS) VALUES (485, P_CODPROD, 0.00, 'V', 'O');
+            END IF;
+
+            SELECT CASE 
+                WHEN CODPROD IN (
+                    SELECT CODPROD FROM TGFEXC WHERE NUTAB IN (
+                        SELECT NUTAB FROM TGFTAB WHERE CODTAB = 3)) THEN 'S' 
+                ELSE 'N' END INTO P_EXNATAB
+            FROM TGFPRO WHERE ATIVO = 'S' AND CODPROD = P_CODPROD;
+
+            IF P_VDAIPI = 'S' THEN
+                SELECT CODIPI INTO P_CODIPI FROM TGFPRO WHERE CODPROD = P_CODPROD;
+                SELECT PERCENTUAL INTO P_ALIQIPI FROM TGFIPI WHERE CODIPI = P_CODIPI;
+
+                IF P_EXNATAB = 'N' THEN 
+                    INSERT INTO TGFEXC (NUTAB, CODPROD, VLRVENDA, TIPO, MODBASEICMS) VALUES (504, P_CODPROD, P_ALIQIPI, 'P', 'O');
+                ELSE
+                    SELECT VLRVENDA INTO V_ALIQIPI FROM TGFEXC WHERE NUTAB = 504 AND CODPROD = P_CODPROD;
+                    IF V_ALIQIPI <> P_ALIQIPI THEN  
+                        UPDATE TGFEXC SET VLRVENDA = P_ALIQIPI WHERE NUTAB = 504 AND CODPROD = P_CODPROD;
+                    END IF;
+                END IF;
+            ELSE
+                IF P_EXNATAB = 'S' THEN 
+                    DELETE FROM TGFEXC WHERE NUTAB = 504 AND CODPROD = P_CODPROD;
+                END IF;
+
+            END IF;
+        END IF;
+    END IF;
+
+    IF P_TIPOEVENTO = AFTER_UPDATE THEN
+    --DESCOMENTE ESTE BLOCO PARA PROGRAMAR O "AFTER UPDATE"
+        P_CODPROD := EVP_GET_CAMPO_INT(P_IDSESSAO, 'CODPROD');
+        SELECT TEMIPIVENDA INTO P_VDAIPI FROM TGFPRO WHERE CODPROD = P_CODPROD;
+        SELECT MARCA INTO V_MARCA FROM TGFPRO WHERE CODPROD = P_CODPROD;
+
+        IF (V_MARCA = 'IPC') OR (V_MARCA = 'EJC') THEN        
+            SELECT CASE 
+                WHEN CODPROD IN (
+                    SELECT CODPROD FROM TGFEXC WHERE NUTAB IN (
+                        SELECT NUTAB FROM TGFTAB WHERE CODTAB = 2)) THEN 'S' 
+                ELSE 'N' END INTO P_EXNATAB2 
+            FROM TGFPRO WHERE ATIVO = 'S' AND CODPROD = P_CODPROD;
+        
+            IF P_EXNATAB2 = 'N' THEN
+                INSERT INTO TGFEXC (NUTAB, CODPROD, VLRVENDA, TIPO, MODBASEICMS) VALUES (485, P_CODPROD, 0.00, 'V', 'O');
+            END IF;
+
+            SELECT CASE 
+                WHEN CODPROD IN (
+                    SELECT CODPROD FROM TGFEXC WHERE NUTAB IN (
+                        SELECT NUTAB FROM TGFTAB WHERE CODTAB = 3)) THEN 'S' 
+                ELSE 'N' END INTO P_EXNATAB
+            FROM TGFPRO WHERE ATIVO = 'S' AND CODPROD = P_CODPROD;
+
+            IF P_VDAIPI = 'S' THEN
+                SELECT CODIPI INTO P_CODIPI FROM TGFPRO WHERE CODPROD = P_CODPROD;
+                SELECT PERCENTUAL INTO P_ALIQIPI FROM TGFIPI WHERE CODIPI = P_CODIPI;
+
+                IF P_EXNATAB = 'N' THEN 
+                    INSERT INTO TGFEXC (NUTAB, CODPROD, VLRVENDA, TIPO, MODBASEICMS) VALUES (504, P_CODPROD, P_ALIQIPI, 'P', 'O');
+                ELSE
+                    SELECT VLRVENDA INTO V_ALIQIPI FROM TGFEXC WHERE NUTAB = 504 AND CODPROD = P_CODPROD;
+                    IF V_ALIQIPI <> P_ALIQIPI THEN  
+                        UPDATE TGFEXC SET VLRVENDA = P_ALIQIPI WHERE NUTAB = 504 AND CODPROD = P_CODPROD;
+                    END IF;
+                END IF;
+            ELSE
+                IF P_EXNATAB = 'S' THEN 
+                    DELETE FROM TGFEXC WHERE NUTAB = 504 AND CODPROD = P_CODPROD;
+                END IF;
+
+            END IF;
+        END IF;
+
+END;

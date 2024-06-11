@@ -1,0 +1,93 @@
+CREATE OR REPLACE PROCEDURE "AD_STP_DFX_RENOVAR" (
+       P_CODUSU NUMBER,        -- Código do usuário logado
+       P_IDSESSAO VARCHAR2,    -- Identificador da execução. Serve para buscar informações dos parâmetros/campos da execução.
+       P_QTDLINHAS NUMBER,     -- Informa a quantidade de registros selecionados no momento da execução.
+       P_MENSAGEM OUT VARCHAR2 -- Caso seja passada uma mensagem aqui, ela será exibida como uma informação ao usuário.
+) AS
+       PARAM_NROPARCELAS NUMBER;
+       FIELD_CODDESPFIXA NUMBER;
+       P_ATIVO VARCHAR2(1);
+       V_PARC NUMBER;
+       V_EMP NUMBER;
+       V_OBS VARCHAR2(4000);
+       V_VLR NUMBER;
+       V_VENCINI DATE;
+       V_VENC DATE;
+       P_VENC DATE;
+       V_DHOPER DATE;
+       P_NUFIN NUMBER;
+       V_DIA INT;
+       V_NUMNOTA VARCHAR2(100);
+       P_NUMNOTA VARCHAR2(100);
+       V_NAT NUMBER;
+       V_TOP NUMBER;
+       V_PROJ NUMBER;
+       V_DESDOB NUMBER;
+       V_TIPO VARCHAR2(2);
+       P_TEMPO INT := 0;
+       C_DESPFIXA int := 0;
+
+BEGIN
+
+       PARAM_NROPARCELAS := ACT_INT_PARAM(P_IDSESSAO, 'NROPARCELAS');
+
+       FOR I IN 1..P_QTDLINHAS -- Este loop permite obter o valor de campos dos registros envolvidos na execução.
+       LOOP
+       
+              FIELD_CODDESPFIXA := ACT_INT_FIELD(P_IDSESSAO, I, 'CODDESPFIXA');
+              SELECT ATIVO INTO P_ATIVO FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+
+              IF P_ATIVO <> 'S' THEN
+                     UPDATE AD_TGFDFX SET ATIVO = 'S', DESPSTATUS = 'A' WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              END IF;
+
+              SELECT CODPARC INTO V_PARC FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT CODEMP INTO V_EMP FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT NVL(OBSDESP,'') INTO V_OBS FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT VLRDESP INTO V_VLR FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT CODNAT INTO V_NAT FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT CODTIPOPER INTO V_TOP FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT NVL(CODPROJ,0) INTO V_PROJ FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT DTVENCINI INTO V_VENCINI FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+              SELECT TIPO INTO V_TIPO FROM AD_TGFDFX WHERE CODDESPFIXA = FIELD_CODDESPFIXA;
+
+              SELECT MAX(NUFIN)+1 INTO P_NUFIN FROM TGFFIN;
+              SELECT MAX(DHALTER) INTO V_DHOPER FROM TGFTOP WHERE CODTIPOPER = V_TOP;
+
+              IF V_TIPO = '1' THEN
+                     P_TEMPO := 1;
+              ELSIF V_TIPO = '2' THEN
+                     P_TEMPO := 2;  
+              ELSIF V_TIPO = '3' THEN
+                     P_TEMPO := 3;
+              ELSIF V_TIPO = '6' THEN
+                     P_TEMPO := 6;
+              ELSIF V_TIPO = '12' THEN
+                     P_TEMPO := 12;  
+              END IF;             
+
+              FOR I IN 1..PARAM_NROPARCELAS
+              LOOP
+                     SELECT REPLACE(ADD_MONTHS(MAX(DTVENC),P_TEMPO),TO_CHAR(ADD_MONTHS(MAX(DTVENC),P_TEMPO),'DD'),TO_CHAR(V_VENCINI,'DD')) INTO V_VENC 
+                            FROM TGFFIN WHERE AD_CODDESPFIXA = FIELD_CODDESPFIXA;
+                     SELECT TO_CHAR(V_VENC, 'YYYYMM') INTO P_NUMNOTA FROM DUAL;
+                     SELECT MAX(NUFIN)+1 INTO P_NUFIN FROM TGFFIN;
+                     SELECT COUNT(*) + 1 INTO V_DESDOB FROM TGFFIN WHERE AD_CODDESPFIXA = FIELD_CODDESPFIXA;
+                     SELECT TO_CHAR(V_VENC, 'D') INTO V_DIA FROM DUAL;
+
+                     IF V_DIA = 7 THEN 
+                            P_VENC := V_VENC - 1; 
+                     ELSIF V_DIA = 1 THEN 
+                            P_VENC := V_VENC - 2;
+                     ELSE 
+                            P_VENC := V_VENC;
+                     END IF;
+
+                     INSERT INTO TGFFIN (NUFIN,CODPARC,NUMNOTA,VLRDESDOB,RECDESP,DTNEG,DTVENCINIC,DTVENC,HISTORICO,CODBCO,CODTIPTIT,AD_CODDESPFIXA,AD_DESPFIXA,CODEMP,PROVISAO,CODTIPOPER,DHTIPOPER,DESDOBRAMENTO,CODNAT,DTALTER,DHMOV,CODPROJ)
+                            VALUES (P_NUFIN,V_PARC,P_NUMNOTA,V_VLR,-1,TO_CHAR(SYSDATE, 'DD/MM/YYYY'),V_VENCINI,TO_CHAR(P_VENC, 'DD/MM/YYYY'),V_OBS,1,2,FIELD_CODDESPFIXA,'S',V_EMP,'S',V_TOP,V_DHOPER,TO_CHAR(V_DESDOB),V_NAT,TO_CHAR(SYSDATE, 'DD/MM/YYYY'),SYSDATE,V_PROJ);
+              
+              END LOOP;
+
+       END LOOP;
+
+END;
