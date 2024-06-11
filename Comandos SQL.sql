@@ -426,3 +426,44 @@ SET
 WHERE 
     NUBCO > 10000 AND 
     DTLANC BETWEEN '01/01/2023' AND '31/05/2023'
+________________________________________________________________________________________________________________
+--Ajuste Saldo Estoque de Terceiros
+
+-- Verificar produtos com saldo em estoque de terceiros
+SELECT 
+    CODEMP,
+    CODLOCAL,
+    CODPROD,
+    CODPARC,
+    ESTOQUE,
+    RESERVADO
+FROM TGFEST
+WHERE CODPARC <> 0
+
+--DELETE FROM TGFEST WHERE CODPARC <> 0 AND ESTOQUE = 0
+
+-- Verificar status dos itens na TGFITE se estão marcados para movimentar estoque de terceiros
+SELECT
+    CAB.CODTIPOPER,
+    ITE.ATUALESTTERC,
+    ITE.TERCEIROS,
+    ITE.CODLOCALTERC
+FROM TGFITE ITE
+    JOIN TGFCAB CAB ON CAB.NUNOTA = ITE.NUNOTA
+WHERE
+    ITE.CODPROD IN (
+        SELECT CODPROD FROM TGFEST WHERE CODPARC <> 0)
+        
+--Alterar itens na tgfite para não movimentar estoque de terceiros
+ALTER TRIGGER TRG_UPT_TGFITE DISABLE;
+UPDATE TGFITE SET ATUALESTTERC = 'N', TERCEIROS = 'N', CODLOCALTERC = '' WHERE CODPROD IN (SELECT CODPROD FROM TGFEST WHERE CODPARC <> 0);
+ALTER TRIGGER TRG_UPT_TGFITE ENABLE;
+
+--Verificar as TOPs que estão marcadas para movimentar estoque de terceiros
+SELECT CODTIPOPER, DESCROPER, DHALTER, ATUALESTTERC, ATUALESTWMSTERC, CODUSU FROM TGFTOP
+WHERE 
+    (ATUALESTTERC NOT LIKE 'N' OR
+    ATUALESTWMSTERC NOT LIKE 'N') AND
+    ATIVO = 'S'
+    
+UPDATE TGFTOP SET ATUALESTTERC = 'N', ATUALESTWMSTERC = 'N' WHERE (ATUALESTTERC NOT LIKE 'N' OR ATUALESTWMSTERC NOT LIKE 'N')    
