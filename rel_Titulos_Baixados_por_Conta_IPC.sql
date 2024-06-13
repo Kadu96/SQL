@@ -1,0 +1,74 @@
+SELECT
+    MBC.CODCTABCOINT  AS "Cod_Conta",
+    BCO.NOMEBCO AS "Banco",
+    CTA.CODCTABCO AS "Conta",
+    MBC.DHCONCILIACAO AS "Dta_Conciliacao",
+    FIN.DTNEG AS "Dta_Negociacao",
+    FIN.DTVENC AS "Dta_Vencimento",
+    FIN.NUMNOTA AS "Nro_NF-e",
+    FIN.CODPARC AS "Cod_Parceiro",
+    MBC.HISTORICO AS "Historico",
+    TIT.DESCRTIPTIT AS "Tipo_Titulo",
+    FIN.VLRDESDOB AS "Vlr_Titulo",
+    FIN.VLRJURO AS "Vlr_Juro",
+    FIN.VLRDESC AS "Vlr_Desc",
+    CASE WHEN MBC.RECDESP=1 THEN VLRLANC ELSE 0 END AS "Credito",
+    CASE WHEN MBC.RECDESP=-1 THEN VLRLANC ELSE 0 END AS "Debito",
+    PAR.NOMEPARC AS "Parceiro",
+    MBC.DTLANC AS "Dta_Baixa",
+    MBC.NUMDOC AS "Nro_Documento",
+    (SELECT CTA1.CODCTABCO FROM TGFMBC MBB, TSICTA CTA1
+        WHERE MBC.NUMTRANSF = MBB.NUMTRANSF AND MBC.ORIGMOV = MBB.ORIGMOV AND MBC.RECDESP <> MBB.RECDESP AND MBB.CODCTABCOINT = CTA1.CODCTABCOINT) AS "Contra_Partida",
+    CTA.DESCRICAO AS "Descricao_Conta",
+    NAT.DESCRNAT AS "Descricao_Natureza"
+FROM TGFMBC /*CC (TOP, CODTIPOPER) (Conta Bancária, CODCTABCOINT) CC*/ MBC,
+    TSICTA /*CC (Empresa, CODEMP) (Conta Bancária, CODCTABCOINT) (Conta Bancária, CODCTABCOINTREM) (Parceiro, CODPARC) CC*/ CTA, 
+    TSIBCO BCO, 
+    TGFFIN /*CC (Empresa, CODEMP) (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) (Projeto, CODPROJ) (Parceiro, CODPARC) (TOP, CODTIPOPER) (Conta Bancária, CODCTABCOINT) CC*/ FIN,
+    TGFTIT TIT, 
+    TGFPAR /*CC (Empresa, CODEMP) (Parceiro, CODPARC) (Parceiro, CODPARCMATRIZ) (Conta Bancária, CODCTABCOINT) CC*/ PAR,
+    TGFNAT /*CC (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) CC*/ NAT
+WHERE
+    FIN.CODTIPTIT = TIT.CODTIPTIT AND MBC.CODCTABCOINT = CTA.CODCTABCOINT AND CTA.CODBCO = BCO.CODBCO AND FIN.NUBCO (+) = MBC.NUBCO
+    AND NVL(FIN.CODNAT,0) = NAT.CODNAT AND FIN.NUBCO = MBC.NUBCO AND MBC.NUBCO = FIN.NUBCO (+) AND PAR.CODPARC (+) = FIN.CODPARC
+    AND ((MBC.CODCTABCOINT IN (15,16,107))
+    AND (FIN.AD_ENVCONTAB = 'N' OR FIN.AD_ENVCONTAB IS NULL)
+    AND (MBC.DHCONCILIACAO >= SYSDATE - 90)
+    AND ( MBC.DHCONCILIACAO <= SYSDATE))
+UNION ALL
+SELECT
+    FIN.CODCTABCOINT AS "Cod_Conta",
+    null AS "Banco",
+    null AS "Conta",
+    null AS "Dta_Conciliacao",
+    FIN.DTNEG AS "Dta_Negociacao",
+    FIN.DTVENC AS "Dta_Vencimento",
+    FIN.NUMNOTA AS "Nro_NF-e",
+    FIN.CODPARC AS "Cod_Parceiro",
+    FIN.HISTORICO AS "Historico",
+    TIT.DESCRTIPTIT AS "Tipo_Titulo",
+    FIN.VLRDESDOB AS "Vlr_Titulo",
+    FIN.VLRJURO AS "Vlr_Juro",
+    FIN.VLRDESC AS "Vlr_Desc",
+    CASE WHEN FIN.RECDESP=1 THEN VLRDESDOB ELSE 0 END AS "Credito",
+    CASE WHEN FIN.RECDESP=-1 THEN VLRDESDOB ELSE 0 END AS "Debito",
+    PAR.NOMEPARC AS "Parceiro",
+    FIN.DHBAIXA AS "Dta_Baixa",
+    null AS "Nro_Documento",
+    null AS "Contra_Partida",
+    null AS "Descricao_Conta",
+    NAT.DESCRNAT AS "Descricao_Natureza"
+FROM TGFFIN /*CC (Empresa, CODEMP) (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) (Projeto, CODPROJ) (Parceiro, CODPARC) (TOP, CODTIPOPER) (Conta Bancária, CODCTABCOINT) CC*/ FIN,
+    TGFTIT TIT, 
+    TGFPAR /*CC (Empresa, CODEMP) (Parceiro, CODPARC) (Parceiro, CODPARCMATRIZ) (Conta Bancária, CODCTABCOINT) CC*/ PAR,
+    TGFNAT /*CC (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) CC*/ NAT
+WHERE
+    FIN.CODTIPTIT = TIT.CODTIPTIT 
+    AND NVL(FIN.CODNAT,0) = NAT.CODNAT AND PAR.CODPARC = FIN.CODPARC
+    AND ((FIN.CODEMP = 2)
+    AND (FIN.NUBCO IS NULL)
+    AND (FIN.PROVISAO = 'N')
+    AND (FIN.AD_ENVCONTAB = 'N' OR FIN.AD_ENVCONTAB IS NULL)
+    AND (FIN.DHBAIXA >= SYSDATE - 90)
+    AND ( FIN.DHBAIXA <= SYSDATE))
+ORDER BY "Cod_Conta", "Dta_Conciliacao", "Dta_Baixa"
