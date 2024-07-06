@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="TÍTULOS BAIXADOS POR CONTA" language="groovy" pageWidth="802" pageHeight="555" orientation="Landscape" columnWidth="802" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0">
+	<property name="ireport.zoom" value="1.9487171000000025"/>
+	<property name="ireport.x" value="528"/>
+	<property name="ireport.y" value="0"/>
+	<property name="ireport.definition"/>
+	<parameter name="CTABCOINT" class="java.math.BigDecimal" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+    MBC.CODCTABCOINT  AS "Cod_Conta",
+    BCO.NOMEBCO AS "Banco",
+    CTA.CODCTABCO AS "Conta",
+    MBC.DHCONCILIACAO AS "Dta_Conciliacao",
+    FIN.DTNEG AS "Dta_Negociacao",
+    FIN.DTVENC AS "Dta_Vencimento",
+    FIN.NUMNOTA AS "Nro_NF-e",
+    FIN.CODPARC AS "Cod_Parceiro",
+    MBC.HISTORICO AS "Historico",
+    TIT.DESCRTIPTIT AS "Tipo_Titulo",
+    FIN.VLRDESDOB AS "Vlr_Titulo",
+    FIN.VLRJURO AS "Vlr_Juro",
+    FIN.VLRDESC AS "Vlr_Desc",
+    CASE WHEN MBC.RECDESP=1 THEN VLRLANC ELSE 0 END AS "Credito",
+    CASE WHEN MBC.RECDESP=-1 THEN VLRLANC ELSE 0 END AS "Debito",
+    PAR.NOMEPARC AS "Parceiro",
+    MBC.DTLANC AS "Dta_Baixa",
+    MBC.NUMDOC AS "Nro_Documento",
+    (SELECT CTA1.CODCTABCO FROM TGFMBC MBB, TSICTA CTA1
+        WHERE MBC.NUMTRANSF = MBB.NUMTRANSF AND MBC.ORIGMOV = MBB.ORIGMOV AND MBC.RECDESP <> MBB.RECDESP AND MBB.CODCTABCOINT = CTA1.CODCTABCOINT) AS "Contra_Partida",
+    CTA.DESCRICAO AS "Descricao_Conta",
+    NAT.DESCRNAT AS "Descricao_Natureza",
+    PRJ.IDENTIFICACAO AS "Projeto"
+FROM TGFMBC /*CC (TOP, CODTIPOPER) (Conta Bancária, CODCTABCOINT) CC*/ MBC,
+    TSICTA /*CC (Empresa, CODEMP) (Conta Bancária, CODCTABCOINT) (Conta Bancária, CODCTABCOINTREM) (Parceiro, CODPARC) CC*/ CTA,
+    TSIBCO BCO,
+    TGFFIN /*CC (Empresa, CODEMP) (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) (Projeto, CODPROJ) (Parceiro, CODPARC) (TOP, CODTIPOPER) (Conta Bancária, CODCTABCOINT) CC*/ FIN,
+    TGFTIT TIT,
+    TGFPAR /*CC (Empresa, CODEMP) (Parceiro, CODPARC) (Parceiro, CODPARCMATRIZ) (Conta Bancária, CODCTABCOINT) CC*/ PAR,
+    TGFNAT /*CC (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) CC*/ NAT,
+    TCSPRJ PRJ
+WHERE
+    FIN.CODTIPTIT = TIT.CODTIPTIT
+    AND MBC.CODCTABCOINT = CTA.CODCTABCOINT
+    AND CTA.CODBCO = BCO.CODBCO
+    AND FIN.NUBCO(+) = MBC.NUBCO
+    AND PRJ.CODPROJ = FIN.CODPROJ
+    AND NVL(FIN.CODNAT,0) = NAT.CODNAT
+    AND FIN.NUBCO = MBC.NUBCO
+    AND MBC.NUBCO = FIN.NUBCO(+)
+    AND PAR.CODPARC(+) = FIN.CODPARC
+    AND ((MBC.CODCTABCOINT IN (1,3,4,5,6,8,9,12,13,100,101,102,103,104,105,106))
+    AND (FIN.AD_ENVCONTAB = 'N' OR FIN.AD_ENVCONTAB IS NULL)
+    AND MBC.DHCONCILIACAO >= TRUNC(LAST_DAY(ADD_MONTHS(SYSDATE, -2)) + 1)
+    AND MBC.DHCONCILIACAO <= LAST_DAY(ADD_MONTHS(SYSDATE, -1)))
+UNION ALL
+SELECT
+    FIN.CODCTABCOINT AS "Cod_Conta",
+    null AS "Banco",
+    null AS "Conta",
+    null AS "Dta_Conciliacao",
+    FIN.DTNEG AS "Dta_Negociacao",
+    FIN.DTVENC AS "Dta_Vencimento",
+    FIN.NUMNOTA AS "Nro_NF-e",
+    FIN.CODPARC AS "Cod_Parceiro",
+    FIN.HISTORICO AS "Historico",
+    TIT.DESCRTIPTIT AS "Tipo_Titulo",
+    FIN.VLRDESDOB AS "Vlr_Titulo",
+    FIN.VLRJURO AS "Vlr_Juro",
+    FIN.VLRDESC AS "Vlr_Desc",
+    CASE WHEN FIN.RECDESP=1 THEN VLRDESDOB ELSE 0 END AS "Credito",
+    CASE WHEN FIN.RECDESP=-1 THEN VLRDESDOB ELSE 0 END AS "Debito",
+    PAR.NOMEPARC AS "Parceiro",
+    FIN.DHBAIXA AS "Dta_Baixa",
+    null AS "Nro_Documento",
+    null AS "Contra_Partida",
+    null AS "Descricao_Conta",
+    NAT.DESCRNAT AS "Descricao_Natureza",
+    PRJ.IDENTIFICACAO AS "Projeto"
+FROM TGFFIN /*CC (Empresa, CODEMP) (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) (Projeto, CODPROJ) (Parceiro, CODPARC) (TOP, CODTIPOPER) (Conta Bancária, CODCTABCOINT) CC*/ FIN,
+    TGFTIT TIT,
+    TGFPAR /*CC (Empresa, CODEMP) (Parceiro, CODPARC) (Parceiro, CODPARCMATRIZ) (Conta Bancária, CODCTABCOINT) CC*/ PAR,
+    TGFNAT /*CC (Centro de Resultado, CODCENCUS) (Natureza, CODNAT) CC*/ NAT,
+    TCSPRJ PRJ
+WHERE
+    FIN.CODTIPTIT = TIT.CODTIPTIT
+    AND NVL(FIN.CODNAT,0) = NAT.CODNAT
+    AND PAR.CODPARC = FIN.CODPARC
+    AND PRJ.CODPROJ = FIN.CODPROJ
+    AND ((FIN.CODEMP = 2)
+    AND (FIN.NUBCO IS NULL)
+    AND (FIN.PROVISAO = 'N')
+    AND (FIN.AD_ENVCONTAB = 'N' OR FIN.AD_ENVCONTAB IS NULL)
+    AND (FIN.DHBAIXA >= TRUNC(LAST_DAY(ADD_MONTHS(SYSDATE, -2)) + 1))
+    AND ( FIN.DHBAIXA <= LAST_DAY(ADD_MONTHS(SYSDATE, -1))))
+ORDER BY "Cod_Conta", "Dta_Conciliacao", "Dta_Baixa"]]>
+	</queryString>
+	<field name="Cod_Conta" class="java.math.BigDecimal"/>
+	<field name="Conta" class="java.lang.String"/>
+	<field name="Nro_NF-e" class="java.math.BigDecimal"/>
+	<field name="Cod_Parceiro" class="java.math.BigDecimal"/>
+	<field name="Vlr_Titulo" class="java.math.BigDecimal"/>
+	<field name="Vlr_Juro" class="java.math.BigDecimal"/>
+	<field name="Vlr_Desc" class="java.math.BigDecimal"/>
+	<field name="Credito" class="java.lang.String"/>
+	<field name="Debito" class="java.lang.String"/>
+	<field name="Contra_Partida" class="java.lang.String"/>
+	<field name="Banco" class="java.lang.String"/>
+	<field name="Historico" class="java.lang.String"/>
+	<field name="Tipo_Titulo" class="java.lang.String"/>
+	<field name="Parceiro" class="java.lang.String"/>
+	<field name="Nro_Documento" class="java.math.BigDecimal"/>
+	<field name="Descricao_Conta" class="java.lang.String"/>
+	<field name="Descricao_Natureza" class="java.lang.String"/>
+	<field name="Dta_Conciliacao" class="java.sql.Timestamp"/>
+	<field name="Dta_Negociacao" class="java.sql.Timestamp"/>
+	<field name="Dta_Vencimento" class="java.sql.Timestamp"/>
+	<field name="Dta_Baixa" class="java.sql.Timestamp"/>
+	<field name="Projeto" class="java.lang.String"/>
+	<group name="CONTA_BANCO" isStartNewPage="true">
+		<groupExpression><![CDATA[$F{Cod_Conta}]]></groupExpression>
+		<groupHeader>
+			<band height="1"/>
+		</groupHeader>
+		<groupFooter>
+			<band height="1"/>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<columnHeader>
+		<band height="25" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="1" y="0" width="30" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cód Conta]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="31" y="0" width="43" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nome Banco]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="74" y="0" width="27" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Conta]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="101" y="0" width="52" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dt. Conciliação]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="153" y="0" width="50" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dt. Negociação]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="203" y="0" width="50" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dt. Vencimento]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="253" y="0" width="41" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nro. NF-e]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="294" y="0" width="40" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Parceiro]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="334" y="0" width="40" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Historico]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="374" y="0" width="46" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tipo Titulo]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="420" y="0" width="35" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Vlr Desdob.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="455" y="0" width="35" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Vlr Juro]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="490" y="0" width="35" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Vlr Desc]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="525" y="0" width="38" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Crédito]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="563" y="0" width="38" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Débito]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="601" y="0" width="40" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dt.  Lançamento]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="641" y="0" width="40" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nro. Documento]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="725" y="0" width="39" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Descr. Conta]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="764" y="0" width="38" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Natureza]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="681" y="0" width="44" height="25" backcolor="#CCCCCC"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Projeto]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="1" y="0" width="30" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{Cod_Conta}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="31" y="0" width="43" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Banco}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="74" y="0" width="27" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Conta}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="101" y="0" width="52" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{Dta_Conciliacao}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="153" y="0" width="50" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{Dta_Negociacao}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="203" y="0" width="50" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{Dta_Vencimento}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="253" y="0" width="41" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{Nro_NF-e}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="294" y="0" width="40" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Cod_Parceiro}.toString() + " - " + $F{Parceiro}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="334" y="0" width="40" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Historico}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="374" y="0" width="46" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Tipo_Titulo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="420" y="0" width="35" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{Vlr_Titulo}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="455" y="0" width="35" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{Vlr_Juro}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="490" y="0" width="35" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{Vlr_Desc}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="525" y="0" width="38" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Credito}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="563" y="0" width="38" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Debito}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="601" y="0" width="40" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{Dta_Baixa}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="641" y="0" width="40" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{Nro_Documento}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="725" y="0" width="39" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Descricao_Conta}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="764" y="0" width="38" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Descricao_Natureza}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="681" y="0" width="44" height="20"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{Projeto}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

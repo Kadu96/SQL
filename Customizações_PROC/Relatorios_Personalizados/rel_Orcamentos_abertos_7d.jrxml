@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rel_Orcamentos_abertos_7d" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+	<property name="ireport.zoom" value="1.9487171000000019"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="PDIR_MODELO" class="java.lang.String" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[SELECT
+    CAB.NUNOTA,
+    CAB.NUMNOTA,
+    CAB.DTNEG,
+    CAB.CODPARC,
+    PAR.RAZAOSOCIAL,
+    CAB.CODTIPOPER,
+    SUBSTR(TOP.DESCROPER, 7, 3) || ' ' || SUBSTR(TOP.DESCROPER, 17, 100) AS DESCROPER,
+    CAB.CODTIPVENDA,
+    TPV.DESCRTIPVENDA,
+    CAB.CODVEND,
+    VEN.APELIDO,
+    CAB.VLRNOTA,
+    (CASE WHEN STATUSNOTA = 'S' THEN 'SIM' ELSE 'NÃO' END) AS CONFIRMADO,
+    (SELECT CGC FROM TSIEMP WHERE CODEMP = CAB.CODEMP) AS CGC_EMP
+FROM TGFCAB CAB
+    LEFT JOIN TGFTOP TOP ON TOP.CODTIPOPER = CAB.CODTIPOPER AND TOP.DHALTER = CAB.DHTIPOPER
+    LEFT JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC
+    LEFT JOIN TGFTPV TPV ON TPV.CODTIPVENDA = CAB.CODTIPVENDA
+    LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND
+WHERE
+    TOP.ORCAMENTO = 'S' AND
+    CAB.NUNOTA NOT IN (
+        SELECT NUNOTAORIG FROM TGFVAR) AND
+    VEN.CODGER = 10 AND
+    DTNEG >= SYSDATE - 7
+ORDER BY CAB.CODVEND, CAB.DTNEG]]>
+	</queryString>
+	<field name="NUNOTA" class="java.math.BigDecimal"/>
+	<field name="NUMNOTA" class="java.math.BigDecimal"/>
+	<field name="DTNEG" class="java.sql.Timestamp"/>
+	<field name="CODPARC" class="java.math.BigDecimal"/>
+	<field name="RAZAOSOCIAL" class="java.lang.String"/>
+	<field name="CODTIPOPER" class="java.math.BigDecimal"/>
+	<field name="DESCROPER" class="java.lang.String"/>
+	<field name="CODTIPVENDA" class="java.math.BigDecimal"/>
+	<field name="DESCRTIPVENDA" class="java.lang.String"/>
+	<field name="CODVEND" class="java.math.BigDecimal"/>
+	<field name="APELIDO" class="java.lang.String"/>
+	<field name="VLRNOTA" class="java.math.BigDecimal"/>
+	<field name="CONFIRMADO" class="java.lang.String"/>
+	<field name="CGC_EMP" class="java.lang.String"/>
+	<group name="VENDEDOR_GROUP" isStartNewPage="true">
+		<groupExpression><![CDATA[$F{CODVEND}]]></groupExpression>
+		<groupHeader>
+			<band height="44">
+				<staticText>
+					<reportElement x="0" y="0" width="85" height="20"/>
+					<box topPadding="2" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<topPen lineWidth="0.75"/>
+						<bottomPen lineWidth="1.0"/>
+					</box>
+					<textElement verticalAlignment="Middle">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<text><![CDATA[VENDEDOR:]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="84" y="0" width="471" height="20"/>
+					<box topPadding="2" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<topPen lineWidth="0.75"/>
+						<bottomPen lineWidth="1.0"/>
+					</box>
+					<textElement verticalAlignment="Middle">
+						<font size="12" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{CODVEND} + " - " + $F{APELIDO}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="0" y="19" width="36" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Nro. Único]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="36" y="19" width="56" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Dta. Negociação]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="92" y="19" width="40" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Cód. Parceiro]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="132" y="19" width="141" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Parceiro]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="273" y="19" width="165" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Tipo Operação]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="438" y="19" width="55" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Tipo Negociação]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="493" y="19" width="62" height="25"/>
+					<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="1">
+						<leftPen lineWidth="1.0"/>
+						<rightPen lineWidth="1.0"/>
+					</box>
+					<textElement>
+						<font size="8"/>
+					</textElement>
+					<text><![CDATA[Vlr. Orçamento]]></text>
+				</staticText>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="1"/>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="60" splitType="Stretch">
+			<image scaleImage="FillFrame" hAlign="Center" vAlign="Middle" onErrorType="Blank">
+				<reportElement x="0" y="0" width="555" height="60"/>
+				<imageExpression class="java.lang.String"><![CDATA[$P{PDIR_MODELO}+"Logo/logo_"+$F{CGC_EMP}+".png"]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="555" height="20" backcolor="#797979"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Orçamentos Pendentes Abertos nos Últimos 7 dias]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="14" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="36" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NUNOTA}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="36" y="0" width="56" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.sql.Timestamp"><![CDATA[$F{DTNEG}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="92" y="0" width="40" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{CODPARC}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="132" y="0" width="141" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{RAZAOSOCIAL}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="273" y="0" width="165" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CODTIPOPER} + " - " + $F{DESCROPER}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="438" y="0" width="55" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRTIPVENDA}]]></textFieldExpression>
+			</textField>
+			<textField pattern="¤ #,##0.00" isBlankWhenNull="true">
+				<reportElement x="493" y="0" width="62" height="14"/>
+				<box topPadding="1" leftPadding="2" bottomPadding="1" rightPadding="2">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.25"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{VLRNOTA}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

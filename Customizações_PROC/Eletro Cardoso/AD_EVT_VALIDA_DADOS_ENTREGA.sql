@@ -14,6 +14,12 @@ CREATE OR REPLACE PROCEDURE AD_EVT_VALIDA_DADOS_ENTREGA (
     P_SEQUENCIA   INT;
     P_NUNOTA      INT;
     P_CODPROD     INT;
+    V_TIPMOV      VARCHAR2(2);
+    V_POSTE       VARCHAR2(2);
+    V_ORIGEM      NUMBER;
+    C_DADOS       INT;
+    C_ORIGEM      INT;
+
        
 BEGIN
     BEFORE_INSERT := 0;
@@ -33,14 +39,22 @@ BEGIN
         SELECT TIPMOV INTO V_TIPMOV FROM TGFCAB WHERE NUNOTA = P_NUNOTA;
         SELECT (CASE WHEN CODGRUPOPROD = 134003 THEN 'S' ELSE 'N' END) INTO V_POSTE 
             FROM TGFPRO WHERE CODPROD = P_CODPROD;
-        SELECT NVL(NUNOTAORIGEM, 0) INTO V_ORIGEM 
-            FROM TGFVAR WHERE NUNOTA = P_NUNOTA AND CODPROD = P_CODPROD AND SEQUENCIA = P_SEQUENCIA;
-
+        SELECT COUNT(NUNOTAORIG) INTO C_ORIGEM 
+            FROM TGFVAR WHERE NUNOTA = P_NUNOTA AND SEQUENCIA = P_SEQUENCIA;
+        
         IF V_TIPMOV = 'P' THEN
+
             IF V_POSTE = 'S' THEN
-                IF V_ORIGEM > 0 THEN       
-                    SELECT COUNT(*) INTO C_COUNT FROM AD_TGFDEP WHERE NUNOTA = V_ORIGEM;
-                    IF C_COUNT > 0 THEN
+
+                IF C_ORIGEM > 0 THEN 
+
+                    SELECT NVL(NUNOTAORIG, 0) INTO V_ORIGEM 
+                        FROM TGFVAR WHERE NUNOTA = P_NUNOTA AND SEQUENCIA = P_SEQUENCIA;     
+
+                    SELECT COUNT(*) INTO C_DADOS FROM AD_TGFDEP WHERE NUNOTA = V_ORIGEM;
+
+                    IF C_DADOS > 0 THEN
+
                         INSERT INTO AD_TGFDEP (
                             NUNOTA,
                             ENDERECO,
@@ -51,7 +65,7 @@ BEGIN
                             DTINCLUSAO,
                             USRINCLUSAO,
                             DTENTREGA)
-                        SELECT (
+                        SELECT
                             P_NUNOTA,
                             ENDERECO,
                             CODPARC,
@@ -60,11 +74,17 @@ BEGIN
                             RESPINSTAL,
                             SYSDATE,
                             P_CODUSU,
-                            DTENTREGA)
+                            DTENTREGA
                         FROM AD_TGFDEP WHERE NUNOTA = V_ORIGEM;
+
                         DELETE FROM AD_TGFDEP WHERE NUNOTA = V_ORIGEM;
+
+                    END IF;
+
                 END IF;
+
             END IF;
+
         END IF;
 
     END IF;

@@ -16,6 +16,7 @@ CREATE OR REPLACE PROCEDURE "AD_EVT_ALTERA_CONTA_CREDITO" (
        V_ORIGEM VARCHAR2(2);
        V_CODPARC INT;
        V_NUNOTA INT;
+       V_RENEGOCIADO VARCHAR2(2);
        
 BEGIN
        BEFORE_INSERT := 0;
@@ -62,23 +63,29 @@ BEGIN
               SELECT ORIGEM INTO V_ORIGEM FROM TGFFIN WHERE NUFIN = V_NUFIN;
               SELECT CODPARC INTO V_CODPARC FROM TGFFIN WHERE NUFIN = V_NUFIN;
               SELECT NUNOTA INTO V_NUNOTA FROM TGFFIN WHERE NUFIN = V_NUFIN;
+              SELECT (CASE WHEN NURENEG IS NULL THEN 'N' ELSE 'S' END) INTO V_RENEGOCIADO
+                     FROM TGFFIN WHERE NUFIN = V_NUFIN;
 
-              IF V_TIPOTITULO = 16 THEN 
-                     UPDATE TGFFIN SET CODCTABCOINT = '' WHERE NUFIN = V_NUFIN;
-              ELSIF V_TIPOTITULO = 17 THEN
-                     UPDATE TGFFIN SET CODCTABCOINT = '' WHERE NUFIN = V_NUFIN;
-              END IF;
+              IF V_RENEGOCIADO = 'N' THEN
 
-              IF V_ORIGEM = 'E' THEN
-                     IF V_CODPARC = 9 THEN 
-                            UPDATE TGFFIN SET CODPARC = (
-                                   SELECT CODPARC FROM TGFCAB WHERE NUNOTA = V_NUNOTA
-                            ) WHERE NUFIN = V_NUFIN;
-                     ELSIF V_CODPARC = 10 THEN
-                            UPDATE TGFFIN SET CODPARC = (
-                                   SELECT CODPARC FROM TGFCAB WHERE NUNOTA = V_NUNOTA
-                            ) WHERE NUFIN = V_NUFIN;
+                     IF V_TIPOTITULO = 16 THEN 
+                            UPDATE TGFFIN SET CODCTABCOINT = '' WHERE NUFIN = V_NUFIN;
+                     ELSIF V_TIPOTITULO = 17 THEN
+                            UPDATE TGFFIN SET CODCTABCOINT = '' WHERE NUFIN = V_NUFIN;
                      END IF;
+
+                     IF V_ORIGEM = 'E' THEN
+                            IF V_CODPARC = 9 THEN 
+                                   UPDATE TGFFIN SET CODPARC = (
+                                          SELECT CODPARC FROM TGFCAB WHERE NUNOTA = V_NUNOTA
+                                   ) WHERE NUFIN = V_NUFIN;
+                            ELSIF V_CODPARC = 10 THEN
+                                   UPDATE TGFFIN SET CODPARC = (
+                                          SELECT CODPARC FROM TGFCAB WHERE NUNOTA = V_NUNOTA
+                                   ) WHERE NUFIN = V_NUFIN;
+                            END IF;
+                     END IF;
+
               END IF;
 
        END IF;
